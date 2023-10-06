@@ -1,15 +1,9 @@
 import numpy as np
 import torch
+from config import LIST_LABEL
 
-emotion2int = {
-    'neutral': 0, 
-    'angry' : 1,
-    'happy' : 2, 
-    'surprise' : 3, 
-    'sad' : 4, 
-    'fear' : 5, 
-    'disgust' : 6
-}
+emotion2int = {v:k for k,v in enumerate(LIST_LABEL)}
+int2emotion = {k:v for k,v in enumerate(LIST_LABEL)}
 
 def pad_mel(inputs):
     _pad = 0

@@ -1,11 +1,12 @@
-import pandas as pd
 from torch.utils.data import Dataset
+import torchaudio
 import torch
-import os, re, librosa
+import os
+import re
 from utils import *
+import random
 
 class multimodal_dataset(Dataset):
-    
     def __init__(self, csv, config):
         self.csv = csv
         self.root_path = config.root_path
@@ -15,7 +16,11 @@ class multimodal_dataset(Dataset):
         return len(self.csv)
     
     def _load_wav(self, wav_path):
-        wav, _ = librosa.load(wav_path, sr=16000)
+        # wav, _ = librosa.load(wav_path, sr=16000)
+        # return wav
+        # load wav file using torch
+        wav, _ = torchaudio.load(wav_path, sample_rate=16000)
+        wav = wav.squeeze().numpy()
         return wav
     
     def _load_txt(self, txt_path):
@@ -51,9 +56,51 @@ class multimodal_dataset(Dataset):
     def __getitem__(self, idx):
         sample = self._load_data(idx)
         return sample
+    
+
+class multimodal_dataset_auxiliary_2(multimodal_dataset):
+    def __init__(self, csv, config):
+        self.csv = csv
+        self.root_path = config.root_path
+        self.remove_non_text = config.remove_non_text
+        self.dict_csv_emotion = {}
+        for emotion in LIST_LABEL:
+            self.dict_csv_emotion[emotion] = self.csv[self.csv['emotion'] == emotion].reset_index(drop=True)
+
+    def _load_data(self, idx):
+        emotion = self.csv['emotion'].iloc[idx]
+
+        # get the index that can be iloc
+
+        csv_same_emotion = self.dict_csv_emotion[emotion]
+        idx_random = random.choice(csv_same_emotion.index)
+
+        if random.random() > 0.5:
+            # random pick wav_path of the same emotion, but other idx
+            wav_path = os.path.join(self.root_path, csv_same_emotion['segment_id'].iloc[idx_random]+'.wav')
+            txt_path = os.path.join(self.root_path, self.csv['segment_id'].iloc[idx]+'.txt')
+        else:
+            # random pick txt_path of the same emotion, but other idx
+            wav_path = os.path.join(self.root_path, self.csv['segment_id'].iloc[idx]+'.wav')
+            txt_path = os.path.join(self.root_path, csv_same_emotion['segment_id'].iloc[idx_random]+'.txt')
+        
+        wav = self._load_wav(wav_path)
+        txt = self._load_txt(txt_path)
+        
+        valence = self.csv['valence'].iloc[idx]
+        arousal = self.csv['arousal'].iloc[idx]
+        
+        sample = {
+            'text' : txt,
+            'wav' : wav,
+            'emotion': emotion2int[emotion],
+            'valence': int(valence)-1,
+            'arousal': round(arousal)-1
+        }
+        return sample
+    
 
 class multimodal_collator():
-    
     def __init__(self, text_tokenizer, audio_processor, return_text=False, max_length=512):
         self.text_tokenizer = text_tokenizer
         self.audio_processor = audio_processor
