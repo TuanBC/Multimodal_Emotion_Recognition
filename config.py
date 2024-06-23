@@ -1,22 +1,24 @@
 from dataclasses import dataclass
 
 LIST_LABEL = [
-    'angry',
-    'disgust',
-    'fear',
-    'happy',
-    'neutral',
-    'sad',
-    'surprise',
+    'Happy',
+    'Relief',
+    'Surprise',
+    'Neutral',
+    'Worry',
+    'Sadness',
+    'Angry',
 ]
+
+LIST_EMOTION = LIST_LABEL
 
 @dataclass
 class HF_DataConfig():
     """
     Data Settings
     """
-    root_path: str = "/mnt/mount-hdd/dataset/KEMDy20_v1_2_processed/txt_wav"
-    csv_path: str = "/mnt/mount-hdd/dataset/KEMDy20_v1_2_processed/annotation.csv"
+    root_path: str = "/data/dataset/TableManager/audio/new_files4279"
+    csv_path: str = "/data/nsml_backup/block-storage/Multimodal_Emotion_Recognition/data/short_audio_text_231105.csv"
     normalized: bool = True
     remove_non_text: bool = True
     # return_text: bool = False

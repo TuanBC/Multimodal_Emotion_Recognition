@@ -1,3 +1,4 @@
+from typing import Any
 import torch
 from torch import nn
 import pytorch_lightning as pl
@@ -187,6 +188,9 @@ class PL_model_MMER_multiloss(pl.LightningModule):
     
     def training_step(self, batch, batch_idx):
         text_inputs, audio_inputs, labels = batch
+        batch_idx_float32 = torch.tensor(batch_idx).float()
+        self.log('batch_idx', batch_idx_float32, on_step=True, on_epoch=False, sync_dist=True)
+
         pred = self.forward(text_inputs, audio_inputs)
         loss = self.cal_loss(pred, labels[self.train_config.label_name])
         
@@ -203,6 +207,9 @@ class PL_model_MMER_multiloss(pl.LightningModule):
 
     def validation_step(self, batch, batch_idx):
         text_inputs, audio_inputs, labels = batch
+        batch_idx_float32 = torch.tensor(batch_idx).float()
+        self.log('batch_idx', batch_idx_float32, on_step=True, on_epoch=False, sync_dist=True)
+
         pred = self.forward(text_inputs, audio_inputs)
         loss = self.cal_loss(pred, labels[self.train_config.label_name])
         
@@ -215,6 +222,14 @@ class PL_model_MMER_multiloss(pl.LightningModule):
         self.log('val_f1', self.f1(pred, labels[self.train_config.label_name]), on_step=False, on_epoch=True, sync_dist=True)
         self.log('val_recall', self.recall(pred, labels[self.train_config.label_name]), on_step=False, on_epoch=True, sync_dist=True)
         self.log('val_precision', self.precision(pred, labels[self.train_config.label_name]), on_step=False, on_epoch=True, sync_dist=True)
+
+    def predict_step(self, batch: Any, batch_idx: int, dataloader_idx: int = 0) -> Any:
+        text_inputs, audio_inputs, labels = batch
+        pred = self.forward(text_inputs, audio_inputs)
+
+        # clear torch cache
+        torch.cuda.empty_cache()
+        return pred
 
     def configure_optimizers(self):
         optimizer = torch.optim.AdamW(self.model.parameters(), lr=self.train_config.lr)

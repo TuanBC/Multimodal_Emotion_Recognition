@@ -124,8 +124,12 @@ class Emotion_MMER(nn.Module):
             
     def forward(self, text_inputs, audio_inputs):
         text_feat = self.text_encoder(**text_inputs)['last_hidden_state']
-        audio_feat = self.audio_encoder(**audio_inputs)[0]
-        
+        try:
+            audio_feat = self.audio_encoder(**audio_inputs)[0]
+        except Exception as e:
+            print(e)
+            print(audio_inputs)
+            return -1
         h = self.MMER(text_feat, audio_feat)
         
         # pooled_audio = self.pool_layer(audio_feat)
